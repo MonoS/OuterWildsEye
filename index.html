@@ -1,0 +1,253 @@
+<html>
+<head>
+<meta charset="UTF-8">
+
+<style>
+.volume-slider-con{
+  height:10px;
+  width:200px;
+     position:relative;
+  background-color:#ddd;
+}
+.volume-slider{
+   height:100%;
+   width:100%;
+   position:relative;
+   background-color:red;
+}
+</style>
+
+<script>
+	var drag = false;
+	var dragCurr = "";
+	var canPlayList = [];
+	var precVolume = [];
+	
+	function start(){
+		var elems = document.getElementsByClassName("volume-slider-con");
+		for (var i = 0; i < elems.length; i++){
+			e = elems[i];
+			e.addEventListener('mousedown',function(ev){
+				drag = true;
+				dragCurr = this.id;
+				updateBar(ev.clientX);
+			});
+		}
+		
+		document.addEventListener('mousemove',function(ev){
+			if(drag){
+				updateBar(ev.clientX);
+			}
+		});
+			
+		document.addEventListener('mouseup',function(ev){
+			drag = false;
+		});
+		
+		if(window.location.search !== ""){
+			var results = [];
+			var tmp = [];
+			
+			window.location.search.substr(1).split("&").forEach(function (item) {
+				tmp = item.split("=");
+				results[tmp[0]] = decodeURIComponent(tmp[1]);
+
+				return results;
+			});
+			
+			setInterval(resync, 5000);
+			
+			for(inst in results){
+				var percentage = results[inst] * 100;
+				
+				var innerId = inst + "Inner";
+				eInner = document.getElementById(innerId);
+
+				//update volume bar and video volume
+				eInner.style.width = percentage +'%';
+
+				var instId = inst + "Audio";
+				var elem = document.getElementById(instId);
+				elem.volume = percentage / 100;
+				elem.muted = false;
+			}
+			
+			updateShare();
+		}
+	}
+	
+	function toggleAudio(inst){
+		var percentage = 0;
+		
+		var instId = inst + "Audio";
+		var elem = document.getElementById(instId);
+		if(elem.volume == 0){
+			if(precVolume[inst] !== undefined){
+				percentage = precVolume[inst] * 100;
+			}else{
+				percentage = 100;
+			}
+		}else{
+			percentage = 0;
+			precVolume[inst] = elem.volume;
+		}
+		elem.volume = percentage / 100;
+		elem.muted != elem.muted;
+		
+		var innerId = inst + "Inner";
+		eInner = document.getElementById(innerId);
+		eInner.style.width = percentage + '%';
+		
+		updateShare();
+	}
+	
+	function updateBar(x, vol) {
+		var volume = e;
+		var percentage;
+		if (vol) {
+			percentage = vol * 100;
+		} else {
+			var position = x - volume.offsetLeft;
+			percentage = 100 * position / volume.clientWidth;
+		}
+
+		if (percentage > 100) {
+			percentage = 100;
+		}
+		if (percentage < 0) {
+			percentage = 0;
+		}
+
+		var innerId = dragCurr + "Inner";
+		eInner = document.getElementById(innerId);
+
+		//update volume bar and video volume
+		eInner.style.width = percentage +'%';
+
+		var instId = dragCurr + "Audio";
+		var elem = document.getElementById(instId);
+		elem.volume = percentage / 100;
+		elem.muted = false;
+		
+		updateShare();
+	}
+	
+	function canPlay(instrument){
+		canPlayList.push(instrument);
+		
+		if(canPlayList.length == 7){
+			for(var i = 0; i < canPlayList.length; i++){
+				
+				var instId = canPlayList[i] + "Audio";
+				var elem = document.getElementById(instId);
+				elem.play();
+			}
+		}
+	}
+	
+	function updateShare(){
+		var shareElem = document.getElementById("shrLink");
+		
+		var instElems = document.getElementsByClassName("volume-slider-con");
+		
+		var param = "";
+		
+		for(var i = 0; i < instElems.length; i++){
+			if(param !== "") { param += "&"; }
+			
+			var instId = instElems[i].id;
+			
+			var audioElem = document.getElementById(instId + "Audio");
+			var currVol = audioElem.volume;
+			
+			if(audioElem.muted){ currVol = 0; }
+			param += instId + "=" + currVol;
+		}
+		
+		var fullLink = location.protocol + '//' + location.host + location.pathname + "?" + param;
+		
+		shareElem.href = fullLink;
+		shareElem.innerText = fullLink;
+	}
+	
+	function resync(){
+		const thrDelay = 0.120;
+		var instElems = document.getElementsByClassName("volume-slider-con");
+		
+		var currentTime = 0;
+		var maxDelay = 0;
+		for(var i = 0; i < instElems.length; i++){
+			var instId = instElems[i].id;
+			var audioElem = document.getElementById(instId + "Audio");
+			if (i == 0){
+				currentTime = audioElem.currentTime;
+			}else{
+				var currDelay = Math.abs(audioElem.currentTime - currentTime)
+				if(currDelay > maxDelay){
+					maxDelay = currDelay;
+				}
+			}
+		}
+		//console.log("MaxDelay: " + maxDelay);
+		
+		if (maxDelay >= thrDelay){
+			for(var i = 0; i < instElems.length; i++){
+				var instId = instElems[i].id;
+				var audioElem = document.getElementById(instId + "Audio");
+				if (i == 0){
+					currentTime = audioElem.currentTime;
+				}else{
+					audioElem.currentTime = currentTime;
+				}
+			}
+		}
+	}
+</script>
+
+<link href="data:image/x-icon;base64,AAABAAEAEBAQAAAAAAAoAQAAFgAAACgAAAAQAAAAIAAAAAEABAAAAAAAgAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAsC8qAP+EAACzh1cAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAACAAAAAAAAACAAAAAAAAEiAAAAADAAAiAAAAAAMzAiAAAAAAAAMzAAAAAAAAAiMzMAAAAAAAADAzAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA" rel="icon" type="image/x-icon" />
+
+</head>
+<body onload="start()">
+	<div id="command">
+		<button type="button" onclick="toggleAudio('banjo')">Banjo</button>              <div id="banjo" class="volume-slider-con">       <div id="banjoInner" class="volume-slider"></div></div> <br/>
+		<button type="button" onclick="toggleAudio('drums')">Drums</button>              <div id="drums" class="volume-slider-con">       <div id="drumsInner" class="volume-slider"></div></div> <br/>
+		<button type="button" onclick="toggleAudio('flute')">Flute</button>              <div id="flute" class="volume-slider-con">       <div id="fluteInner" class="volume-slider"></div></div> <br/>
+		<button type="button" onclick="toggleAudio('harmonica')">Harmonica</button>      <div id="harmonica" class="volume-slider-con">   <div id="harmonicaInner" class="volume-slider"></div></div> <br/>
+		<button type="button" onclick="toggleAudio('newtraveler')">Newtraveler</button>  <div id="newtraveler" class="volume-slider-con"> <div id="newtravelerInner" class="volume-slider"></div></div> <br/>
+		<button type="button" onclick="toggleAudio('piano')">Piano</button>              <div id="piano" class="volume-slider-con">       <div id="pianoInner" class="volume-slider"></div></div> <br/>
+		<button type="button" onclick="toggleAudio('whistling')">Whistling</button>      <div id="whistling" class="volume-slider-con">   <div id="whistlingInner" class="volume-slider"></div></div> <br/>
+		<!-- <button type="button" onclick="resync()">Resync</button> -->
+	</div>
+	
+	<audio id="banjoAudio" controls="true" loop="loop" oncanplaythrough="canPlay('banjo')" style="width: 0px;height: 0px;">
+		<source src="OW_TravelerTheme_banjo.ogg" type="audio/ogg">
+	</audio>
+	
+	<audio id="drumsAudio" controls="true" loop="loop" oncanplaythrough="canPlay('drums')" style="width: 0px;height: 0px;">
+		<source src="OW_TravelerTheme_drums.ogg" type="audio/ogg">
+	</audio>
+	
+	<audio id="fluteAudio" controls="true" loop="loop" oncanplaythrough="canPlay('flute')" style="width: 0px;height: 0px;">
+		<source src="OW_TravelerTheme_flute.ogg" type="audio/ogg">
+	</audio>
+	
+	<audio id="harmonicaAudio" controls="true" loop="loop" oncanplaythrough="canPlay('harmonica')" style="width: 0px;height: 0px;">
+		<source src="OW_TravelerTheme_harmonica.ogg" type="audio/ogg">
+	</audio>
+	
+	<audio id="newtravelerAudio" controls="true" loop="loop" oncanplaythrough="canPlay('newtraveler')" style="width: 0px;height: 0px;">
+		<source src="OW_TravelerTheme_newtraveler 061021 AP.ogg" type="audio/ogg">
+	</audio>
+	
+	<audio id="pianoAudio" controls="true" loop="loop" oncanplaythrough="canPlay('piano')" style="width: 0px;height: 0px;">
+		<source src="OW_TravelerTheme_piano.ogg" type="audio/ogg">
+	</audio>
+	
+	<audio id="whistlingAudio" controls="true" loop="loop" oncanplaythrough="canPlay('whistling')" style="width: 0px;height: 0px;">
+		<source src="OW_TravelerTheme_whistling.ogg" type="audio/ogg">
+	</audio>
+	<br/>
+	
+	<a id="shrLink" href=""></a>
+</body>
+</html>
